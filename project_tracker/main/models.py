@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from users.models import User
 
 # Create your models here.
 class Common(models.Model):
@@ -33,4 +34,4 @@ class Project(Common):
     project_phase=models.CharField(max_length=50, blank=False, null=False, choices=[('Contracting', 'Contracting'), ('Requirement', 'Requirement'), ('Approval', 'Approval'), ('Design', 'Design'), ('Development', 'Development'), ('Testing', 'Testing'), ('Deployment', 'Deployment'), ('Live', 'Live')], default='Planning')
     project_status=models.ForeignKey(Status, on_delete=models.CASCADE)
     stretch_target_date=models.DateField(blank=False, null=False)
-    owner=models.ForeignKey('users.User', on_delete=models.CASCADE)
+    owner=models.ForeignKey(User, on_delete=models.CASCADE)
