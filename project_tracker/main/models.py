@@ -18,6 +18,9 @@ class Category(Common):
 
     def __str__(self):
         return self.category_name
+    class Meta:
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
     
 class Status(Common):
     status_name = models.CharField(max_length=50, choices= [('Planned', 'Planned'), ('On Track', 'On Track'), ('Completed', 'Completed'), ('At Risk', 'At Risk'), ('Delayed', 'Delayed')], default='Not Started', blank=False, null=False)
