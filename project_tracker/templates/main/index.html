@@ -3,9 +3,443 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Project Tracker Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 { color: #667eea; font-size: 24px; }
+        
+        .navbar-links a {
+            color: #333;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+        }
+        
+        .navbar-links a:hover { color: #667eea; }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h2 { font-size: 22px; }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover { background: white; color: #667eea; }
+        
+        .content {
+            padding: 20px;
+            overflow-x: auto;
+        }
+            .toggle-btn {
+                background: transparent;
+                border: none;
+                font-size: 20px;
+                line-height: 1;
+                padding: 0 8px 0 0;
+                margin-right: 8px;
+                cursor: pointer;
+                color: #333;
+                vertical-align: middle;
+            }
+            .toggle-btn:focus { outline: none; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        th {
+            background: #f5f5f5;
+            color: #333;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:hover { background: #f9f9f9; }
+        
+        .project-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .owner { color: #666; font-size: 12px; }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        
+        .status-on-track { background: #c8e6c9; color: #2e7d32; }
+        .status-at-risk { background: #ffe0b2; color: #f57c00; }
+        .status-delayed { background: #ffcdd2; color: #c62828; }
+        .status-completed { background: #a5d6a7; color: #1b5e20; }
+        .status-planned { background: #e0e0e0; color: #424242; }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 4px;
+            height: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state h3 { color: #666; margin-bottom: 10px; }
+        
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 10px; }
+            .header { flex-direction: column; gap: 15px; }
+            .filters { flex-wrap: wrap; }
+        }
+        /* Modal styles */
+        #project-modal { display: none; align-items: center; justify-content: center; }
+        .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:50; }
+        .modal-content {
+            background: #fff;
+            width: 720px;
+            max-width: 95%;
+            margin: 0 16px;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal-field label { display:block; margin-bottom:6px; font-weight:600; color:#333; font-size:13px; }
+        .modal-field .modal-input { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+        .modal-field textarea.modal-input { min-height:78px; resize:vertical; }
+            .modal-field.comment { grid-column: 1 / -1; }
+        
+        
+        .modal-actions { margin-top:16px; display:flex; justify-content:flex-end; gap:8px; }
+        .modal-actions .btn { padding:8px 14px; border-radius:6px; font-weight:600; }
+    </style>
 </head>
 <body>
-    <h1>Home Page</h1>
+    <div class="navbar">
+        <h1>📊 Project Tracker</h1>
+        <div class="navbar-links">
+            {% if user.is_authenticated %}
+                <span style="color: #666;">{{ user.email }}</span>
+                <a href="{% url 'users:logout' %}">Logout</a>
+            {% else %}
+                <a href="{% url 'users:request_otp' %}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h2>Projects Overview</h2>
+            <div class="filters">
+                <button class="btn">All Projects</button>
+                <button class="btn">+ New Project</button>
+            </div>
+        </div>
+
+        <div class="content">
+            {% if categories %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%">Project / Category</th>
+                        <th style="width: 12%">Owner</th>
+                        <th style="width: 10%">Budget</th>
+                        <th style="width: 13%">Target Date</th>
+                        <th style="width: 12%">Status</th>
+                        <th style="width: 18%">Comment</th>
+                        <th style="width: 28%">Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr class="row-category">
+                        <td colspan="6">
+                            <button class="toggle-btn" data-cat="{{ category.uid }}" aria-expanded="true" title="Toggle projects">▾</button>
+                            {{ forloop.counter }}. {{ category.category_name }} — Weight: {{ category.objective_weight }} ({{ category.scorecard_year }})
+                        </td>
+                    </tr>
+                    {% for project in category.project_set.all %}
+                    <tr data-cat="{{ category.uid }}" data-uid="{{ project.uid }}" class="proj-row">
+                        <td>
+                            <span class="project-name">{{ project.project_name }}</span>
+                            <div class="owner">{{ project.project_phase }}</div>
+                        </td>
+                        <td>{{ project.owner.email }}</td>
+                        <td>${{ project.budget|default:"N/A" }}</td>
+                        <td>{{ project.stretch_target_date|date:"d-M-y"|default:"N/A" }}</td>
+                        <td>
+                            {% with status=project.project_status.status_name %}
+                                <span class="status {% if status == 'On Track' %}status-on-track{% elif status == 'At Risk' %}status-at-risk{% elif status == 'Delayed' %}status-delayed{% elif status == 'Completed' %}status-completed{% else %}status-planned{% endif %}">{{ status }}</span>
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {{ project.comment|default:"" }}
+                        </td>
+                        <td>
+                            <div class="progress-bar">
+                                {% if project.project_phase == 'Live' %}
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                {% elif project.project_phase == 'Deployment' %}
+                                    <div class="progress-fill" style="width: 90%;"></div>
+                                {% elif project.project_phase == 'Testing' %}
+                                    <div class="progress-fill" style="width: 75%;"></div>
+                                {% elif project.project_phase == 'Development' %}
+                                    <div class="progress-fill" style="width: 50%;"></div>
+                                {% elif project.project_phase == 'Design' %}
+                                    <div class="progress-fill" style="width: 30%;"></div>
+                                {% elif project.project_phase == 'Requirement' %}
+                                    <div class="progress-fill" style="width: 10%;"></div>
+                                {% elif project.project_phase == 'Contracting' %}
+                                    <div class="progress-fill" style="width: 5%;"></div>
+                                {% else %}
+                                    <div class="progress-fill" style="width: 0%;"></div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <h3>🎯 No Projects Yet</h3>
+                <p>Create a category and projects to start tracking progress.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        // Collapse/expand projects under each category
+        (function(){
+            function toggleCategory(catId, btn){
+                const rows = document.querySelectorAll('[data-cat="' + catId + '"]');
+                const expanded = btn.getAttribute('aria-expanded') === 'true';
+                rows.forEach(r => {
+                    if(r.classList.contains('proj-row')){
+                        r.style.display = expanded ? 'none' : '';
+                    }
+                });
+                btn.setAttribute('aria-expanded', (!expanded).toString());
+                btn.textContent = (!expanded) ? '▾' : '▸';
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e){
+                        const catId = btn.getAttribute('data-cat');
+                        toggleCategory(catId, btn);
+                    });
+                });
+                // open modal on project row click
+                document.querySelectorAll('.proj-row').forEach(row => {
+                    row.addEventListener('click', function(){
+                        const uid = row.getAttribute('data-uid');
+                        if(!uid) return;
+                        fetch('/project/' + uid + '/')
+                            .then(r => r.json())
+                            .then(data => {
+                                const p = data.project;
+                                document.getElementById('modal-project-name').value = p.project_name || '';
+                                const phaseSelect = document.getElementById('modal-project-phase');
+                                if(phaseSelect){ phaseSelect.value = p.project_phase || ''; }
+                                document.getElementById('modal-stretch-target-date').value = p.stretch_target_date ? p.stretch_target_date.split('T')[0] : '';
+                                document.getElementById('modal-budget').value = p.budget || '';
+                                const ownerSelect = document.getElementById('modal-owner');
+                                if(ownerSelect && p.owner_id){ ownerSelect.value = p.owner_id; }
+                                // set project comment
+                                const projectComment = document.getElementById('modal-project-comment');
+                                if(projectComment){ projectComment.value = p.comment || ''; }
+                                // select status
+                                const statusSelect = document.getElementById('modal-status');
+                                if(p.project_status_id){
+                                    statusSelect.value = p.project_status_id;
+                                }
+                                document.getElementById('modal-save-btn').setAttribute('data-uid', uid);
+                                document.getElementById('project-modal').style.display = 'block';
+                            }).catch(console.error);
+                    });
+                });
+
+                // modal save
+                document.getElementById('modal-save-btn').addEventListener('click', function(){
+                    const uid = this.getAttribute('data-uid');
+                    if(!uid) return;
+                    const payload = {
+                        project_name: document.getElementById('modal-project-name').value,
+                        project_phase: document.getElementById('modal-project-phase').value,
+                        stretch_target_date: document.getElementById('modal-stretch-target-date').value,
+                        budget: document.getElementById('modal-budget').value,
+                        project_status_id: document.getElementById('modal-status').value,
+                        owner_id: document.getElementById('modal-owner').value,
+                        comment: (document.getElementById('modal-project-comment') ? document.getElementById('modal-project-comment').value : ''),
+                    };
+                    const csrftoken = (function(){
+                        function getCookie(name){
+                            let cookieValue = null;
+                            if (document.cookie && document.cookie !== ''){
+                                const cookies = document.cookie.split(';');
+                                for (let i=0;i<cookies.length;i++){
+                                    const cookie = cookies[i].trim();
+                                    if (cookie.substring(0, name.length + 1) === (name + '=')){
+                                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                        break;
+                                    }
+                                }
+                            }
+                            return cookieValue;
+                        }
+                        return getCookie('csrftoken');
+                    })();
+
+                    fetch('/project/' + uid + '/update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken,
+                        },
+                        body: JSON.stringify(payload),
+                    }).then(r => r.json()).then(data => {
+                        if(data.ok){
+                            location.reload();
+                        } else {
+                            alert('Failed to save');
+                        }
+                    }).catch(err => { console.error(err); alert('Error saving'); });
+                });
+
+                // modal close
+                document.getElementById('modal-close-btn').addEventListener('click', function(){
+                    document.getElementById('project-modal').style.display = 'none';
+                });
+            });
+        })();
+    </script>
+        <!-- Modal markup -->
+        <div id="project-modal">
+            <div class="modal-overlay">
+                <div class="modal-content" role="dialog" aria-modal="true">
+                    <h3>Edit Project</h3>
+                    <div class="modal-fields">
+                        <div class="modal-field">
+                            <label for="modal-project-name">Project Name</label>
+                            <input id="modal-project-name" class="modal-input" type="text" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-project-phase">Phase</label>
+                            <select id="modal-project-phase" class="modal-input">
+                                <option value="">-- Select Phase --</option>
+                                {% for ph in phases %}
+                                <option value="{{ ph.0 }}">{{ ph.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-stretch-target-date">Target Date</label>
+                            <input id="modal-stretch-target-date" class="modal-input" type="date" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-budget">Budget</label>
+                            <input id="modal-budget" class="modal-input" type="number" step="0.01" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-status">Status</label>
+                            <select id="modal-status" class="modal-input">
+                                <option value="">-- Select --</option>
+                                {% for s in statuses %}
+                                <option value="{{ s.uid }}">{{ s.status_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-owner">Owner</label>
+                            <select id="modal-owner" class="modal-input">
+                                <option value="">-- Select Owner --</option>
+                                {% for o in owners %}
+                                <option value="{{ o.uid }}">{{ o.email }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="modal-field comment">
+                            <label for="modal-project-comment">Comment</label>
+                            <textarea id="modal-project-comment" class="modal-input" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="modal-close-btn" class="btn" style="background:#eee; color:#333; border:1px solid #ddd;">Cancel</button>
+                        <button id="modal-save-btn" class="btn" style="background:#28a745; color:#fff; border:none;">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 </body>
 </html>

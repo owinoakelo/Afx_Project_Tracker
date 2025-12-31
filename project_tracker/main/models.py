@@ -24,8 +24,6 @@ class Category(Common):
     
 class Status(Common):
     status_name = models.CharField(max_length=50, choices= [('Planned', 'Planned'), ('On Track', 'On Track'), ('Completed', 'Completed'), ('At Risk', 'At Risk'), ('Delayed', 'Delayed')], default='Not Started', blank=False, null=False)
-    date = models.DateField(blank=False, null=False)
-    comment = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.status_name
@@ -38,3 +36,5 @@ class Project(Common):
     project_status=models.ForeignKey(Status, on_delete=models.CASCADE)
     stretch_target_date=models.DateField(blank=False, null=False)
     owner=models.ForeignKey(User, on_delete=models.CASCADE)
+    budget=models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
