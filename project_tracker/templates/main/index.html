@@ -112,9 +112,21 @@
         }
         
         tr:hover { background: #f9f9f9; }
-        
-        .project-name {
+        .row-category {
             font-weight: 600;
+            color: #333;
+            background: #fafafa;
+        }
+        .row-category td {
+            padding: 14px 12px;
+            font-weight: 600;
+        }
+        .proj-row { background: #fff; }
+        .proj-row td:first-child {
+            padding-left: 40px;
+        }
+        .project-name {
+            /* font-weight: 600; */
             color: #333;
         }
         
@@ -200,8 +212,8 @@
         <div class="header">
             <h2>Projects Overview</h2>
             <div class="filters">
-                <button class="btn">All Projects</button>
-                <button class="btn">+ New Project</button>
+                <button id="new-category-btn" class="btn">+ New Category</button>
+                <button id="new-project-btn" class="btn">+ New Project</button>
             </div>
         </div>
 
@@ -214,6 +226,7 @@
                         <th style="width: 12%">Owner</th>
                         <th style="width: 10%">Budget</th>
                         <th style="width: 13%">Target Date</th>
+                        <th style="width: 10%">Phase</th>
                         <th style="width: 12%">Status</th>
                         <th style="width: 18%">Comment</th>
                         <th style="width: 28%">Progress</th>
@@ -221,8 +234,8 @@
                 </thead>
                 <tbody>
                     {% for category in categories %}
-                    <tr class="row-category">
-                        <td colspan="6">
+                    <tr class="row-category" data-uid="{{ category.uid }}">
+                        <td colspan="7">
                             <button class="toggle-btn" data-cat="{{ category.uid }}" aria-expanded="true" title="Toggle projects">▾</button>
                             {{ forloop.counter }}. {{ category.category_name }} — Weight: {{ category.objective_weight }} ({{ category.scorecard_year }})
                         </td>
@@ -230,12 +243,12 @@
                     {% for project in category.project_set.all %}
                     <tr data-cat="{{ category.uid }}" data-uid="{{ project.uid }}" class="proj-row">
                         <td>
-                            <span class="project-name">{{ project.project_name }}</span>
-                            <div class="owner">{{ project.project_phase }}</div>
+                            <span class="project-name">{{ project.project_name }} — Weight: {{ project.measure_initiative_weight }}</span>
                         </td>
                         <td>{{ project.owner.email }}</td>
                         <td>${{ project.budget|default:"N/A" }}</td>
                         <td>{{ project.stretch_target_date|date:"d-M-y"|default:"N/A" }}</td>
+                        <td>{{ project.project_phase }}</td>
                         <td>
                             {% with status=project.project_status.status_name %}
                                 <span class="status {% if status == 'On Track' %}status-on-track{% elif status == 'At Risk' %}status-at-risk{% elif status == 'Delayed' %}status-delayed{% elif status == 'Completed' %}status-completed{% else %}status-planned{% endif %}">{{ status }}</span>
@@ -254,8 +267,8 @@
                                     <div class="progress-fill" style="width: 75%;"></div>
                                 {% elif project.project_phase == 'Development' %}
                                     <div class="progress-fill" style="width: 50%;"></div>
-                                {% elif project.project_phase == 'Design' %}
-                                    <div class="progress-fill" style="width: 30%;"></div>
+                                 {% elif project.project_phase == 'Design' %}
+                                    <div class="progress-fill" style="width: 30%;"></div>   
                                 {% elif project.project_phase == 'Requirement' %}
                                     <div class="progress-fill" style="width: 10%;"></div>
                                 {% elif project.project_phase == 'Contracting' %}
@@ -278,7 +291,121 @@
             {% endif %}
         </div>
     </div>
-    <script>
+        <!-- Modal markup -->
+        <div id="project-modal">
+            <div class="modal-overlay">
+                <div class="modal-content" role="dialog" aria-modal="true">
+                    <h3>Edit Project</h3>
+                    <div class="modal-fields">
+                        <div class="modal-field">
+                            <label for="modal-project-name">Project Name</label>
+                            <input id="modal-project-name" class="modal-input" type="text" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-project-phase">Phase</label>
+                            <select id="modal-project-phase" class="modal-input">
+                                <option value="">-- Select Phase --</option>
+                                {% for ph in phases %}
+                                <option value="{{ ph.0 }}">{{ ph.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-stretch-target-date">Target Date</label>
+                            <input id="modal-stretch-target-date" class="modal-input" type="date" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-budget">Budget</label>
+                            <input id="modal-budget" class="modal-input" type="number" step="0.01" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-measure-weight">Measure Weight</label>
+                            <input id="modal-measure-weight" class="modal-input" type="number" step="0.001" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-status">Status</label>
+                            <select id="modal-status" class="modal-input">
+                                <option value="">-- Select --</option>
+                                {% for s in statuses %}
+                                <option value="{{ s.uid }}">{{ s.status_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-owner">Owner</label>
+                            <select id="modal-owner" class="modal-input">
+                                <option value="">-- Select Owner --</option>
+                                {% for o in owners %}
+                                <option value="{{ o.uid }}">{{ o.email }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="modal-field comment">
+                            <label for="modal-project-comment">Comment</label>
+                            <textarea id="modal-project-comment" class="modal-input" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="modal-close-btn" class="btn" style="background:#eee; color:#333; border:1px solid #ddd;">Cancel</button>
+                        <button id="modal-save-btn" class="btn" style="background:#28a745; color:#fff; border:none;">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Category Modal -->
+        <div id="category-modal" style="display:none;">
+            <div class="modal-overlay">
+                <div class="modal-content" role="dialog" aria-modal="true">
+                    <h3>Edit Category</h3>
+                    <div class="modal-fields">
+                        <div class="modal-field">
+                            <label for="modal-category-name">Category Name</label>
+                            <input id="modal-category-name" class="modal-input" type="text" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-category-weight">Objective Weight</label>
+                            <input id="modal-category-weight" class="modal-input" type="number" step="0.1" />
+                        </div>
+                        <div class="modal-field">
+                            <label for="modal-category-year">Scorecard Year</label>
+                            <input id="modal-category-year" class="modal-input" type="number" />
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="category-modal-close-btn" class="btn" style="background:#eee; color:#333; border:1px solid #ddd;">Cancel</button>
+                        <button id="category-modal-save-btn" class="btn" style="background:#28a745; color:#fff; border:none;">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- new category modal -->
+        <div id="new-category-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: white; border-radius: 12px; padding: 30px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Create New Category</h2>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Category Name</label>
+                        <input id="modal-new-category-name" type="text" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Objective Weight</label>
+                        <input id="modal-new-category-weight" type="number" step="0.1" value="1.0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Scorecard Year</label>
+                        <input id="modal-new-category-year" type="number" value="2026" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                    <button id="new-category-modal-close-btn" style="padding: 8px 16px; background: #ddd; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Close</button>
+                    <button id="new-category-modal-save-btn" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Create</button>
+                </div>
+            </div>
+        </div>
+
+
+        <script>
         // Collapse/expand projects under each category
         (function(){
             function toggleCategory(catId, btn){
@@ -294,10 +421,48 @@
             }
 
             document.addEventListener('DOMContentLoaded', function(){
+                // New category button
+                document.getElementById('new-category-btn').addEventListener('click', function(){
+                    document.getElementById('modal-new-category-name').value = '';
+                    document.getElementById('modal-new-category-weight').value = '';
+                    document.getElementById('modal-new-category-year').value = new Date().getFullYear();
+                    document.getElementById('new-category-modal').style.display = 'flex';
+                });
+
+                // New project button
+                document.getElementById('new-project-btn').addEventListener('click', function(){
+                    document.getElementById('modal-new-project-name').value = '';
+                    document.getElementById('modal-new-project-category').value = '';
+                    document.getElementById('modal-new-project-phase').value = '';
+                    document.getElementById('modal-new-project-date').value = '';
+                    document.getElementById('modal-new-project-owner').value = '';
+                    document.getElementById('modal-new-project-budget').value = '';
+                    document.getElementById('modal-new-project-weight').value = '';
+                    document.getElementById('new-project-modal').style.display = 'flex';
+                });
+
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.addEventListener('click', function(e){
                         const catId = btn.getAttribute('data-cat');
                         toggleCategory(catId, btn);
+                    });
+                });
+                // open modal on category row click (excluding toggle button)
+                document.querySelectorAll('.row-category').forEach(row => {
+                    row.addEventListener('click', function(e){
+                        if(e.target.classList.contains('toggle-btn')) return;
+                        const uid = row.getAttribute('data-uid');
+                        if(!uid) return;
+                        fetch('/category/' + uid + '/')
+                            .then(r => r.json())
+                            .then(data => {
+                                const c = data.category;
+                                document.getElementById('modal-category-name').value = c.category_name || '';
+                                document.getElementById('modal-category-weight').value = c.objective_weight || '';
+                                document.getElementById('modal-category-year').value = c.scorecard_year || '';
+                                document.getElementById('category-modal-save-btn').setAttribute('data-uid', uid);
+                                document.getElementById('category-modal').style.display = 'block';
+                            }).catch(console.error);
                     });
                 });
                 // open modal on project row click
@@ -314,6 +479,7 @@
                                 if(phaseSelect){ phaseSelect.value = p.project_phase || ''; }
                                 document.getElementById('modal-stretch-target-date').value = p.stretch_target_date ? p.stretch_target_date.split('T')[0] : '';
                                 document.getElementById('modal-budget').value = p.budget || '';
+                                document.getElementById('modal-measure-weight').value = p.measure_initiative_weight || '';
                                 const ownerSelect = document.getElementById('modal-owner');
                                 if(ownerSelect && p.owner_id){ ownerSelect.value = p.owner_id; }
                                 // set project comment
@@ -339,6 +505,7 @@
                         project_phase: document.getElementById('modal-project-phase').value,
                         stretch_target_date: document.getElementById('modal-stretch-target-date').value,
                         budget: document.getElementById('modal-budget').value,
+                        measure_initiative_weight: document.getElementById('modal-measure-weight').value,
                         project_status_id: document.getElementById('modal-status').value,
                         owner_id: document.getElementById('modal-owner').value,
                         comment: (document.getElementById('modal-project-comment') ? document.getElementById('modal-project-comment').value : ''),
@@ -381,65 +548,244 @@
                 document.getElementById('modal-close-btn').addEventListener('click', function(){
                     document.getElementById('project-modal').style.display = 'none';
                 });
+
+                // category modal save
+                document.getElementById('category-modal-save-btn').addEventListener('click', function(){
+                    const uid = this.getAttribute('data-uid');
+                    if(!uid) return;
+                    const payload = {
+                        category_name: document.getElementById('modal-category-name').value,
+                        objective_weight: document.getElementById('modal-category-weight').value,
+                        scorecard_year: document.getElementById('modal-category-year').value,
+                    };
+                    const csrftoken = (function(){
+                        function getCookie(name){
+                            let cookieValue = null;
+                            if (document.cookie && document.cookie !== ''){
+                                const cookies = document.cookie.split(';');
+                                for (let i=0;i<cookies.length;i++){
+                                    const cookie = cookies[i].trim();
+                                    if (cookie.substring(0, name.length + 1) === (name + '=')){
+                                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                        break;
+                                    }
+                                }
+                            }
+                            return cookieValue;
+                        }
+                        return getCookie('csrftoken');
+                    })();
+
+                    fetch('/category/' + uid + '/update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken,
+                        },
+                        body: JSON.stringify(payload),
+                    }).then(r => r.json()).then(data => {
+                        if(data.ok){
+                            location.reload();
+                        } else {
+                            alert('Failed to save');
+                        }
+                    }).catch(err => { console.error(err); alert('Error saving'); });
+                });
+
+                // category modal close
+                document.getElementById('category-modal-close-btn').addEventListener('click', function(){
+                    document.getElementById('category-modal').style.display = 'none';
+                });
+
+                // new category save
+                document.getElementById('new-category-modal-save-btn').addEventListener('click', function(){
+                    const payload = {
+                        category_name: document.getElementById('modal-new-category-name').value,
+                        objective_weight: document.getElementById('modal-new-category-weight').value,
+                        scorecard_year: document.getElementById('modal-new-category-year').value,
+                    };
+                    if(!payload.category_name){
+                        alert('Category name is required');
+                        return;
+                    }
+                    const csrftoken = (function(){
+                        function getCookie(name){
+                            let cookieValue = null;
+                            if (document.cookie && document.cookie !== ''){
+                                const cookies = document.cookie.split(';');
+                                for (let i=0;i<cookies.length;i++){
+                                    const cookie = cookies[i].trim();
+                                    if (cookie.substring(0, name.length + 1) === (name + '=')){
+                                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                        break;
+                                    }
+                                }
+                            }
+                            return cookieValue;
+                        }
+                        return getCookie('csrftoken');
+                    })();
+
+                    fetch('/category/create/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken,
+                        },
+                        body: JSON.stringify(payload),
+                    }).then(r => r.json()).then(data => {
+                        if(data.ok){
+                            location.reload();
+                        } else {
+                            alert('Failed to create category');
+                        }
+                    }).catch(err => { console.error(err); alert('Error creating category'); });
+                });
+
+                // new category modal close
+                document.getElementById('new-category-modal-close-btn').addEventListener('click', function(){
+                    document.getElementById('new-category-modal').style.display = 'none';
+                });
+
+                // new project save
+                document.getElementById('new-project-modal-save-btn').addEventListener('click', function(){
+                    const catUid = document.getElementById('modal-new-project-category').value;
+                    if(!catUid){
+                        alert('Please select a category');
+                        return;
+                    }
+                    const payload = {
+                        project_name: document.getElementById('modal-new-project-name').value,
+                        category_id: document.getElementById('modal-new-project-category').value,
+                        project_phase: document.getElementById('modal-new-project-phase').value,
+                        stretch_target_date: document.getElementById('modal-new-project-date').value,
+                        owner_id: document.getElementById('modal-new-project-owner').value,
+                        budget: document.getElementById('modal-new-project-budget').value,
+                        measure_initiative_weight: document.getElementById('modal-new-project-weight').value,
+                        project_status_id: document.getElementById('modal-new-project-status').value,
+                    };
+                    if(!payload.project_name){
+                        alert('Project name is required');
+                        return;
+                    }
+                    const csrftoken = (function(){
+                        function getCookie(name){
+                            let cookieValue = null;
+                            if (document.cookie && document.cookie !== ''){
+                                const cookies = document.cookie.split(';');
+                                for (let i=0;i<cookies.length;i++){
+                                    const cookie = cookies[i].trim();
+                                    if (cookie.substring(0, name.length + 1) === (name + '=')){
+                                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                        break;
+                                    }
+                                }
+                            }
+                            return cookieValue;
+                        }
+                        return getCookie('csrftoken');
+                    })();
+
+                   fetch('/category/' + catUid + '/project/create/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: JSON.stringify(payload),
+                    })
+                    .then(async (r) => {
+                    const text = await r.text();
+                    let data;
+                    try { data = JSON.parse(text); } catch { data = { ok: false, error: text }; }
+
+                    if (!r.ok || !data.ok) {
+                        alert(data.error || 'Failed to create project');
+                        return;
+                    }
+
+                    location.reload();
+                    })
+                    .catch(err => {
+                    console.error(err);
+                    alert('Error creating project');
+                    });
+
+                });
+
+                // new project modal close
+                document.getElementById('new-project-modal-close-btn').addEventListener('click', function(){
+                    document.getElementById('new-project-modal').style.display = 'none';
+                });
             });
         })();
     </script>
-        <!-- Modal markup -->
-        <div id="project-modal">
-            <div class="modal-overlay">
-                <div class="modal-content" role="dialog" aria-modal="true">
-                    <h3>Edit Project</h3>
-                    <div class="modal-fields">
-                        <div class="modal-field">
-                            <label for="modal-project-name">Project Name</label>
-                            <input id="modal-project-name" class="modal-input" type="text" />
-                        </div>
-                        <div class="modal-field">
-                            <label for="modal-project-phase">Phase</label>
-                            <select id="modal-project-phase" class="modal-input">
-                                <option value="">-- Select Phase --</option>
-                                {% for ph in phases %}
-                                <option value="{{ ph.0 }}">{{ ph.1 }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="modal-field">
-                            <label for="modal-stretch-target-date">Target Date</label>
-                            <input id="modal-stretch-target-date" class="modal-input" type="date" />
-                        </div>
-                        <div class="modal-field">
-                            <label for="modal-budget">Budget</label>
-                            <input id="modal-budget" class="modal-input" type="number" step="0.01" />
-                        </div>
-                        <div class="modal-field">
-                            <label for="modal-status">Status</label>
-                            <select id="modal-status" class="modal-input">
-                                <option value="">-- Select --</option>
-                                {% for s in statuses %}
-                                <option value="{{ s.uid }}">{{ s.status_name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="modal-field">
-                            <label for="modal-owner">Owner</label>
-                            <select id="modal-owner" class="modal-input">
-                                <option value="">-- Select Owner --</option>
-                                {% for o in owners %}
-                                <option value="{{ o.uid }}">{{ o.email }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="modal-field comment">
-                            <label for="modal-project-comment">Comment</label>
-                            <textarea id="modal-project-comment" class="modal-input" rows="3"></textarea>
-                        </div>
+
+        <!-- new project modal -->
+        <div id="new-project-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: white; border-radius: 12px; padding: 30px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); max-height: 90vh; overflow-y: auto;">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Create New Project</h2>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Project Name</label>
+                        <input id="modal-new-project-name" type="text" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
                     </div>
-                    <div class="modal-actions">
-                        <button id="modal-close-btn" class="btn" style="background:#eee; color:#333; border:1px solid #ddd;">Cancel</button>
-                        <button id="modal-save-btn" class="btn" style="background:#28a745; color:#fff; border:none;">Save</button>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Category</label>
+                        <select id="modal-new-project-category" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="">-- Select Category --</option>
+                            {% for category in categories %}
+                            <option value="{{ category.uid }}">{{ category.category_name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Phase</label>
+                        <select id="modal-new-project-phase" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="">-- Select Phase --</option>
+                            {% for phase in phases %}
+                            <option value="{{ phase.0 }}">{{ phase.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Target Date</label>
+                        <input id="modal-new-project-date" type="date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Owner</label>
+                        <select id="modal-new-project-owner" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="">-- Select Owner --</option>
+                            {% for user in owners %}
+                            <option value="{{ user.uid }}">{{ user.first_name }} {{ user.last_name }}   </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Budget</label>
+                        <input id="modal-new-project-budget" type="number" step="0.01" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Measure Initiative Weight</label>
+                        <input id="modal-new-project-weight" type="number" step="0.1" value="1.0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Status</label>
+                        <select id="modal-new-project-status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="">-- Select Status --</option>
+                            {% for status in statuses %}
+                            <option value="{{ status.uid }}">{{ status.status_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                    <button id="new-project-modal-close-btn" style="padding: 8px 16px; background: #ddd; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Close</button>
+                    <button id="new-project-modal-save-btn" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Create</button>
                 </div>
             </div>
         </div>
+
+        
 </body>
 </html>

@@ -23,7 +23,7 @@ class Category(Common):
         verbose_name_plural = 'Categories'
     
 class Status(Common):
-    status_name = models.CharField(max_length=50, choices= [('Planned', 'Planned'), ('On Track', 'On Track'), ('Completed', 'Completed'), ('At Risk', 'At Risk'), ('Delayed', 'Delayed')], default='Not Started', blank=False, null=False)
+    status_name = models.CharField(max_length=50, choices= [('Planned', 'Planned'), ('On Track', 'On Track'), ('At Risk', 'At Risk'), ('Delayed', 'Delayed')], default='Not Started', blank=False, null=False)
 
     def __str__(self):
         return self.status_name
@@ -31,8 +31,8 @@ class Status(Common):
 class Project(Common):
     project_name = models.CharField(max_length=100, blank=False, null=False)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    measure_initiative_weight=models.DecimalField(max_digits=3, decimal_places=3, blank=False, null=False)
-    project_phase=models.CharField(max_length=50, blank=False, null=False, choices=[('Contracting', 'Contracting'), ('Requirement', 'Requirement'), ('Approval', 'Approval'), ('Design', 'Design'), ('Development', 'Development'), ('Testing', 'Testing'), ('Deployment', 'Deployment'), ('Live', 'Live')], default='Planning')
+    measure_initiative_weight=models.DecimalField(max_digits=3, decimal_places=1, blank=False, null=False)
+    project_phase=models.CharField(max_length=50, blank=False, null=False, choices=[('Contracting', 'Contracting'), ('Requirement', 'Requirement'), ('Design', 'Design'), ('Development', 'Development'), ('Testing', 'Testing'), ('Deployment', 'Deployment'), ('Live', 'Live')], default='Requirement')
     project_status=models.ForeignKey(Status, on_delete=models.CASCADE)
     stretch_target_date=models.DateField(blank=False, null=False)
     owner=models.ForeignKey(User, on_delete=models.CASCADE)
