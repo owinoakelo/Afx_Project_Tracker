@@ -34,7 +34,7 @@ if DEBUG:
 else:
     print("Development mode is OFF")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost",".localhost","owinoakelo.com","161.35.174.232",,".owinoakelo.com"]
 
 
 # Application definition
