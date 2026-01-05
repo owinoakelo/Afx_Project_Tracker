@@ -9,6 +9,7 @@ class User(AbstractUser):
     Standard Django user model with OTP authentication.
     """
     email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True, blank=True, null=True)
     # Override the inherited many-to-many relations to avoid reverse accessor clashes
     groups = models.ManyToManyField(
         'auth.Group',
