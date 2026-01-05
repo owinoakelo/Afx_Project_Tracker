@@ -8,6 +8,7 @@ from django.conf import settings
 from .models import User
 import random
 import string
+import requests
 
 
 def generate_otp(length=6):
@@ -17,16 +18,21 @@ def generate_otp(length=6):
 
 def send_otp_email(user, otp_code):
     """Send OTP to user's email."""
-    subject = 'Your OTP Code'
-    message = f'Your OTP code is: {otp_code}\n\nThis code will expire in 10 minutes.'
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": settings.BREVO_API_KEY,
+        "content-type": "application/json",
+    }
+    data = {    
+        "sender": {"name": "Project Tracker", "email": settings.DEFAULT_FROM_EMAIL},
+        "to": [{"email": user.email, "name": f"{user.first_name} {user.last_name}"}],
+        "subject": "Your OTP Code",
+        "htmlContent": f"<html><body><p>Use the below OTP Code to log in to the Scorecard tracker. <br> <br> Your OTP code is: <strong>{otp_code}</strong></p><p>This code will expire in 10 minutes.</p></body></html>",
+    }
     try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
+        res = requests.post(url, json=data, headers=headers)
+        print(f"Brevo response: {res.status_code} - {res.text}")
         return True
     except Exception as e:
         print(f"Failed to send OTP email: {e}")
@@ -105,6 +111,7 @@ def verify_otp(request):
 
 
 @login_required
+
 def logout_user(request):
     """Log out the user."""
     logout(request)

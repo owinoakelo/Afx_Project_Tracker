@@ -212,6 +212,9 @@
         <div class="header">
             <h2>Projects Overview</h2>
             <div class="filters">
+                {% if user.is_authenticated and user.is_staff %}
+                <a href="{% url 'users:create_user' %}"><button class="btn">+ Add User</button></a>
+                {% endif %}
                 <button id="new-category-btn" class="btn">+ New Category</button>
                 <button id="new-project-btn" class="btn">+ New Project</button>
             </div>
