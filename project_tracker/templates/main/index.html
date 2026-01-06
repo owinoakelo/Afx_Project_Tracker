@@ -95,6 +95,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
+            table-layout: fixed;
         }
         
         th {
@@ -125,6 +126,30 @@
         .proj-row td:first-child {
             padding-left: 40px;
         }
+        .comment-cell {
+            width: 32%;
+            max-width: 420px;
+            vertical-align: top;
+        }
+        .comment-col {
+            width: 32%;
+        }
+        .col-owner,
+        .col-budget {
+            width: 14%;
+        }
+        .col-owner,
+        .col-budget {
+            padding-right: 18px;
+        }
+        .comment-cell .comment-content {
+            max-height: 3.6em;
+            overflow-y: auto;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            line-height: 1.4;
+        }
         .project-name {
             /* font-weight: 600; */
             color: #333;
@@ -151,6 +176,7 @@
             border-radius: 4px;
             height: 20px;
             overflow: hidden;
+            max-width: 100px;
         }
         
         .progress-fill {
@@ -226,39 +252,36 @@
                 <thead>
                     <tr>
                         <th style="width: 25%">Project / Category</th>
-                        <th style="width: 12%">Owner</th>
-                        <th style="width: 10%">Budget</th>
+                        <th class="col-owner" style="width: 14%">Owner</th>
+                        <th class="col-budget" style="width: 12%">Budget (Millions)</th>
                         <th style="width: 13%">Target Date</th>
                         <th style="width: 10%">Phase</th>
                         <th style="width: 12%">Status</th>
-                        <th style="width: 18%">Comment</th>
-                        <th style="width: 28%">Progress</th>
+                        <th style="width: 18%">Progress</th>
+                        <th class="comment-col" style="width: 30%">Comment</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for category in categories %}
                     <tr class="row-category" data-uid="{{ category.uid }}">
-                        <td colspan="7">
+                        <td colspan="8">
                             <button class="toggle-btn" data-cat="{{ category.uid }}" aria-expanded="true" title="Toggle projects">▾</button>
-                            {{ forloop.counter }}. {{ category.category_name }} — Weight: {{ category.objective_weight }} ({{ category.scorecard_year }})
+                            {{ forloop.counter }}. {{ category.category_name }} — Weight: {{ category.objective_weight }}% ({{ category.scorecard_year }})
                         </td>
                     </tr>
                     {% for project in category.project_set.all %}
                     <tr data-cat="{{ category.uid }}" data-uid="{{ project.uid }}" class="proj-row">
                         <td>
-                            <span class="project-name">{{ project.project_name }} — Weight: {{ project.measure_initiative_weight }}</span>
+                            <span class="project-name">{{ project.project_name }} — Weight: {{ project.measure_initiative_weight }}%</span>
                         </td>
-                        <td>{{ project.owner.email }}</td>
-                        <td>${{ project.budget|default:"N/A" }}</td>
+                        <td class="col-owner">{{ project.owner.email }}</td>
+                        <td class="col-budget">${{ project.budget|default:"N/A" }}</td>
                         <td>{{ project.stretch_target_date|date:"d-M-y"|default:"N/A" }}</td>
                         <td>{{ project.project_phase }}</td>
                         <td>
                             {% with status=project.project_status.status_name %}
                                 <span class="status {% if status == 'On Track' %}status-on-track{% elif status == 'At Risk' %}status-at-risk{% elif status == 'Delayed' %}status-delayed{% elif status == 'Completed' %}status-completed{% else %}status-planned{% endif %}">{{ status }}</span>
                             {% endwith %}
-                        </td>
-                        <td>
-                            {{ project.comment|default:"" }}
                         </td>
                         <td>
                             <div class="progress-bar">
@@ -280,6 +303,9 @@
                                     <div class="progress-fill" style="width: 0%;"></div>
                                 {% endif %}
                             </div>
+                        </td>
+                        <td class="comment-cell">
+                            <div class="comment-content">{{ project.comment|default:"" }}</div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -322,7 +348,7 @@
                             <input id="modal-budget" class="modal-input" type="number" step="0.01" />
                         </div>
                         <div class="modal-field">
-                            <label for="modal-measure-weight">Measure Weight</label>
+                            <label for="modal-measure-weight">Measure Weight %</label>
                             <input id="modal-measure-weight" class="modal-input" type="number" step="0.001" />
                         </div>
                         <div class="modal-field">
@@ -366,7 +392,7 @@
                             <input id="modal-category-name" class="modal-input" type="text" />
                         </div>
                         <div class="modal-field">
-                            <label for="modal-category-weight">Objective Weight</label>
+                            <label for="modal-category-weight">Objective Weight %</label>
                             <input id="modal-category-weight" class="modal-input" type="number" step="0.1" />
                         </div>
                         <div class="modal-field">
@@ -392,7 +418,7 @@
                         <input id="modal-new-category-name" type="text" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
                     </div>
                     <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Objective Weight</label>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Objective Weight %</label>
                         <input id="modal-new-category-weight" type="number" step="0.1" value="1.0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
                     </div>
                     <div>
@@ -689,7 +715,7 @@
                         return getCookie('csrftoken');
                     })();
 
-                   fetch('/category/' + catUid + '/project/create/', {
+                   fetch('/project/create/' + catUid + '', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -769,7 +795,7 @@
                         <input id="modal-new-project-budget" type="number" step="0.01" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
                     </div>
                     <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Measure Initiative Weight</label>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px; color: #333;">Measure Initiative Weight%</label>
                         <input id="modal-new-project-weight" type="number" step="0.1" value="1.0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
                     </div>
                     <div>
