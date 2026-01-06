@@ -274,7 +274,7 @@
                         <td>
                             <span class="project-name">{{ project.project_name }} — Weight: {{ project.measure_initiative_weight }}%</span>
                         </td>
-                        <td class="col-owner">{{ project.owner.email }}</td>
+                        <td class="col-owner">{{ project.owner.first_name }} {{ project.owner.last_name }}</td>
                         <td class="col-budget">${{ project.budget|default:"N/A" }}</td>
                         <td>{{ project.stretch_target_date|date:"d-M-y"|default:"N/A" }}</td>
                         <td>{{ project.project_phase }}</td>
@@ -365,7 +365,7 @@
                             <select id="modal-owner" class="modal-input">
                                 <option value="">-- Select Owner --</option>
                                 {% for o in owners %}
-                                <option value="{{ o.uid }}">{{ o.email }}</option>
+                                <option value="{{ o.uid }}">{{ o.first_name }} {{ o.last_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
